@@ -1,0 +1,106 @@
+--@name RakituCam
+--@author Neatro
+--@shared
+
+
+--################################
+--#                              #
+--#  CRT Aesthetics 2 by Neatro  #
+--#                              #
+--################################
+-- do not claim as your own please
+--   Licenced under BSD 3-Clause
+
+--Wire Origin to the prop you want the camera to follow.
+--Wire Pod to a Wire Pod Controller.
+--Enjoy.
+
+if SERVER then
+
+    Rakitu = {}
+    Rakitu.Offset = Vector( 0, 0, 144 ) --Offset of the point that the camera will follow/
+    Rakitu.Distance = 360 --The distance at which the camera will follow from the point.
+    Rakitu.ToggleKey = 8192 --The button to toggle the camera with (Default: R = 8192).
+    --https://wiki.facepunch.com/gmod/Enums/IN
+    
+    --ignore this, small wire wrapper
+    wireHandle = {}
+    wireHandle.InputNames = {}
+    wireHandle.InputTypes = {}
+    wireHandle.appendInputs = function( names, types )
+        table.add( wireHandle.InputNames, names )
+        table.add( wireHandle.InputTypes, types )
+    end
+    wireHandle.adjust = function()
+        wire.adjustInputs( wireHandle.InputNames, wireHandle.InputTypes )
+    end
+    
+    
+    wireHandle.appendInputs( { "Origin", "Pod" }, { "Entity", "Wirelink" } )
+    
+    wireHandle.adjust()
+    
+    local hud = prop.createComponent( chip():getPos() + Vector( 6, 0, 0 ), Angle( 0, 0, 0 ), "starfall_hud", "models/bull/dynamicbutton.mdl", true)
+    hud:linkComponent( chip() )
+    local cameraFollowPoint = holograms.create( chip():getPos(), Angle( 0, 0, 0 ), "models/sprops/misc/bone_from_z.mdl", Vector( 1, 1, 4 ) )
+    local cam = holograms.create( chip():getPos(), Angle( 0, 0, 0 ), "models/sprops/misc/bone_from_x.mdl", Vector( 4, 1, 1 ) )
+    
+    local linked = false
+    
+    waskeydown = true
+    wasDriven = false
+    camEnabled = false
+    
+    hook.add( "tick", "runtime", function() 
+        local Origin = wire.ports.Origin
+        local Pod = wire.ports.Pod
+        
+        local followPos = chip():getPos()
+        
+        if Origin and Origin:isValid() and Pod and Pod:isValid() then
+            if not linked and Pod.Entity and Pod.Entity:isValid() then
+                hud:linkComponent( Pod.Entity )
+                linked = true
+                print( "Everything linked! Ready to use" )
+            end
+            
+            if Pod.Driver and Pod.Driver:isValid() then
+                followPos = Origin:getPos() + Rakitu.Offset
+            end
+        elseif Pod and Pod:isValid() and Pod.Driver and Pod.Driver:isValid() then
+            followPos = Pod.Driver:getPos() + Rakitu.Offset
+        end
+        
+        if Pod and Pod:isValid() and Pod.Driver and Pod.Driver:isValid() then
+
+            if Pod.Driver:keyDown( Rakitu.ToggleKey ) then
+                if waskeydown == false then
+                    camEnabled = not camEnabled
+                end
+                waskeydown = true
+            else
+                waskeydown = false
+            end
+            
+            if camEnabled then
+                Pod.Driver:setViewEntity( cam )
+            else
+                Pod.Driver:setViewEntity( nil )
+            end
+            
+            local offset = cam:getPos() - cameraFollowPoint:getPos()
+            cam:setPos( cameraFollowPoint:getPos() + offset:getNormalized() * Rakitu.Distance )
+            cam:setAngles( ( Origin:getPos() - cam:getPos() ):getAngle() )
+        
+            if not wasDriven then
+                camEnabled = false
+            end
+            wasDriven = true
+        else
+            wasDriven = false
+        end
+        
+        cameraFollowPoint:setPos( followPos )
+    end )
+
+end
