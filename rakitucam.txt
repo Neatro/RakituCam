@@ -3,11 +3,11 @@
 --@shared
 
 
---################################
---#                              #
---#  CRT Aesthetics 2 by Neatro  #
---#                              #
---################################
+--#################################
+--#                               #
+--#      Rakitucam by Neatro      #
+--#                               #
+--#################################
 -- do not claim as your own please
 --   Licenced under BSD 3-Clause
 
